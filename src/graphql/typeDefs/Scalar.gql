@@ -1,0 +1,6 @@
+scalar Decimal
+
+scalar Date
+scalar DateTime
+
+scalar JSON

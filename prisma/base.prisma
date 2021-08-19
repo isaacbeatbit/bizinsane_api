@@ -1,0 +1,436 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum ResourceDiscount {
+  QUOTATION
+  PROJECT
+  PRODUCT
+  CART
+  PLAN
+}
+
+model Coupon {
+  id               String           @id @default(cuid())
+  name             String           @unique @db.VarChar(20)
+  active           Boolean          @default(false)
+  start            DateTime         @db.Date
+  end              DateTime         @db.Date
+  resourceDiscount ResourceDiscount
+  discount         Decimal
+  cuponItem        CouponItem?
+}
+
+model CouponItem {
+  id       String @id @default(cuid())
+  coupon   Coupon @relation(fields: [couponId], references: [id])
+  couponId String
+  user     User   @relation(fields: [userId], references: [id])
+  userId   String
+}
+
+model TeamPrice {
+  id           String   @id @default(cuid())
+  name         String   @unique
+  company      Decimal  @db.Money
+  businessUnit Decimal  @db.Money
+  staff        Decimal  @db.Money
+  team         Decimal  @db.Money
+  configs      Config[]
+}
+
+model Team {
+  id            String  @id @default(cuid())
+  companies     Int
+  businessUnits Int
+  staff         Int
+  team          Int
+  config        Config?
+}
+
+model PublicService {
+  id                String              @id @default(cuid())
+  name              String              @unique @db.VarChar(50)
+  available         Boolean             @default(true)
+  description       String              @db.VarChar(250)
+  image             String              @db.VarChar(250)
+  overview          Json
+  icon              String              @db.VarChar(50)
+  price             Decimal             @db.Money
+  publicServiceItem PublicServiceItem[]
+}
+
+model PublicServiceItem {
+  id              String        @id @default(cuid())
+  publicService   PublicService @relation(fields: [publicServiceId], references: [id])
+  publicServiceId String
+  config          Config?       @relation(fields: [configId], references: [id])
+  configId        String?
+}
+
+model Config {
+  id                 String              @id @default(cuid())
+  // TEAM
+  team               Team                @relation(fields: [teamId], references: [id])
+  teamId             String
+  // TEAM PRICE
+  teamPrice          TeamPrice           @relation(fields: [teamPriceId], references: [id])
+  teamPriceId        String
+  // PLAN
+  plan               Plan?
+  // PUBLIC SERVICE ITEMS
+  publicServiceItems PublicServiceItem[]
+}
+
+model Plan {
+  id           String  @id @default(cuid())
+  productId    String  @db.VarChar(100)
+  name         String  @db.VarChar(50)
+  priceMonthly Decimal @db.Money
+  priceYearly  Decimal @db.Money
+  discount     Decimal
+  free         Boolean @default(false)
+  // CONFIG
+  config       Config  @relation(fields: [configId], references: [id])
+  configId     String
+  // USERS
+  users        User[]
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  UNDEFINED
+}
+
+enum Privilege {
+  SUPER_USER
+  SUPER_STAFF
+  OWNER_BUSINESS
+  OWNER_BUSINESS_UNIT
+  BUSINESS_STAFF_MEMBER
+  BUSINESS_TEAM_MEMBER
+  CUSTOMER
+}
+
+model User {
+  id                  String               @id @default(cuid())
+  active              Boolean              @default(false)
+  avatar              String?              @db.VarChar(250)
+  birthDate           DateTime?
+  dateJoined          DateTime             @default(now())
+  email               String               @unique
+  firstName           String?              @db.VarChar(50)
+  gender              Gender               @default(UNDEFINED)
+  isVerified          Boolean              @default(false)
+  lastLogin           DateTime             @default(now())
+  lastName            String?              @db.VarChar(50)
+  password            String               @db.VarChar(250)
+  phone               String?              @db.VarChar(50)
+  privilege           Privilege            @default(CUSTOMER)
+  username            String               @unique @db.VarChar(50)
+  // PLAN
+  plan                Plan?                @relation(fields: [planId], references: [id])
+  planId              String?
+  // LISTS
+  companies           Company[]
+  businessUnits       BusinessUnit[]
+  quotations          Quotation[]
+  projects            Project[]
+  projecItems         ProjectItem[]
+  quotationItems      QuotationItem[]
+  carts               Cart[]
+  couponItems         CouponItem[]
+  companyStaffs       CompanyStaff[]
+  businessUnitMembers BusinessUnitMember[]
+}
+
+model CompanyStaff {
+  id        String  @id @default(cuid())
+  // USER
+  user      User    @relation(fields: [userId], references: [id])
+  userId    String
+  // COMPANY
+  company   Company @relation(fields: [companyId], references: [id])
+  companyId String
+}
+
+model Company {
+  id            String         @id @default(cuid())
+  name          String         @db.VarChar(100)
+  logo          String?        @db.VarChar(250)
+  // USER
+  owner         User           @relation(fields: [ownerId], references: [id])
+  ownerId       String
+  // COMPANY MEMBERS
+  companyStaffs CompanyStaff[]
+  // BUSINESS UNITS
+  businessUnits BusinessUnit[]
+  // TIME
+  createdAt     DateTime       @default(now())
+  updateAt      DateTime       @updatedAt
+}
+
+model BusinessUnitMember {
+  id             String       @id @default(cuid())
+  // USER
+  user           User         @relation(fields: [userId], references: [id])
+  userId         String
+  // COMPANY
+  businessUnit   BusinessUnit @relation(fields: [businessUnitId], references: [id])
+  businessUnitId String
+}
+
+model BusinessUnit {
+  id                  String               @id @default(cuid())
+  name                String               @db.VarChar(100)
+  // USER
+  owner               User                 @relation(fields: [ownerId], references: [id])
+  ownerId             String
+  // COMPANY
+  company             Company              @relation(fields: [companyId], references: [id])
+  companyId           String
+  // CATEGORIES
+  categories          Category[]
+  // SERVICES
+  services            Service[]
+  // PROJECTS
+  projects            Project[]
+  // QUOTATIONS
+  quotations          Quotation[]
+  // CART
+  carts               Cart[]
+  // PRODUCTS
+  products            Product[]
+  // UNITS
+  units               Unit[]
+  // BUSINESS UNIT MEMBER
+  businessUnitMembers BusinessUnitMember[]
+  // TIME
+  createdAt           DateTime             @default(now())
+  updateAt            DateTime             @updatedAt
+}
+
+model Category {
+  id             String       @id @default(cuid())
+  name           String       @db.VarChar(100)
+  // BUSINESS UNIT
+  businessUnit   BusinessUnit @relation(fields: [businessUnitId], references: [id])
+  businessUnitId String
+  // SERVICE
+  service        Service?     @relation(fields: [serviceId], references: [id])
+  serviceId      String?
+  // PRODUCTS
+  products       Product[]
+}
+
+model Service {
+  id             String        @id @default(cuid())
+  name           String        @db.VarChar(100)
+  description    String        @db.VarChar
+  image          String?       @db.VarChar(250)
+  price          Decimal       @db.Money
+  available      Boolean       @default(true)
+  // BUSINESS UNIT
+  businessUnit   BusinessUnit  @relation(fields: [businessUnitId], references: [id])
+  businessUnitId String
+  // CATEGORIES
+  categories     Category[]
+  // SERVICE ITEMS
+  serviceItems   ServiceItem[]
+}
+
+model ServiceItem {
+  id          String     @id @default(cuid())
+  quantity    Int
+  total       Decimal    @db.Money
+  // SERVICE
+  service     Service    @relation(fields: [serviceId], references: [id])
+  serviceId   String
+  // QUOTATION
+  quotation   Quotation? @relation(fields: [quotationId], references: [id])
+  quotationId String?
+  // PROJECT
+  project     Project?   @relation(fields: [projectId], references: [id])
+  projectId   String?
+}
+
+model Quotation {
+  id             String          @id @default(cuid())
+  offerLimit     DateTime        @db.Date
+  available      Boolean         @default(true)
+  customerName   String          @db.VarChar(100)
+  companyName    String          @db.VarChar(100)
+  contact        Json
+  // MONEY
+  subtotal       Decimal         @db.Money
+  netAmount      Decimal         @db.Money
+  discount       Decimal
+  taxes          Decimal         @db.Money
+  total          Decimal         @db.Money
+  // OWNER
+  responsible    User            @relation(fields: [responsibleId], references: [id])
+  responsibleId  String
+  // BUSINESS UNIT
+  businessUnit   BusinessUnit    @relation(fields: [businessUnitId], references: [id])
+  businessUnitId String
+  // SERVICE ITEMS
+  serviceItems   ServiceItem[]
+  // PROJECT
+  project        Project?
+  // QUOTATION ITEMS
+  quotationItems QuotationItem[]
+  // TIME
+  createdAt      DateTime        @default(now())
+  updateAt       DateTime        @updatedAt
+}
+
+model QuotationItem {
+  id          String    @id @default(cuid())
+  // QUOTATION
+  quotation   Quotation @relation(fields: [quotationId], references: [id])
+  quotationId String
+  // OWNER
+  owner       User      @relation(fields: [ownerId], references: [id])
+  ownerId     String
+}
+
+enum ProjectStatus {
+  ACTIVE
+  INACTIVE
+  DEVELOPMENT
+}
+
+model Project {
+  id             String        @id @default(cuid())
+  // INFO
+  name           String        @db.VarChar(100)
+  description    String        @db.VarChar
+  image          String?       @db.VarChar(250)
+  url            String?       @db.VarChar(50)
+  contact        Json
+  show           Boolean       @default(false)
+  deploymentDate DateTime      @db.Date
+  status         ProjectStatus @default(DEVELOPMENT)
+  available      Boolean       @default(true)
+  // MONEY
+  subtotal       Decimal       @db.Money
+  discount       Decimal
+  netAmount      Decimal       @db.Money
+  taxes          Decimal       @db.Money
+  total          Decimal       @db.Money
+  // OWNER
+  responsible    User          @relation(fields: [responsibleId], references: [id])
+  responsibleId  String
+  // BUSINESS UNIT
+  businessUnit   BusinessUnit  @relation(fields: [businessUnitId], references: [id])
+  businessUnitId String
+  // QUOTATION
+  quotation      Quotation?    @relation(fields: [quotationId], references: [id])
+  quotationId    String?
+  // SERVICE ITEMS
+  serviceItems   ServiceItem[]
+  // PROJECTS
+  projectItems   ProjectItem[]
+  // TIME
+  createdAt      DateTime      @default(now())
+  updateAt       DateTime      @updatedAt
+}
+
+model ProjectItem {
+  id        String  @id @default(cuid())
+  // PROJECT
+  project   Project @relation(fields: [projectId], references: [id])
+  projectId String
+  // OWNER
+  owner     User    @relation(fields: [ownerId], references: [id])
+  ownerId   String
+}
+
+model Unit {
+  id             String       @id @default(cuid())
+  name           String       @db.VarChar(50)
+  products       Product[]
+  // BUSINES UNIT
+  businessUnit   BusinessUnit @relation(fields: [businessUnitId], references: [id])
+  businessUnitId String
+}
+
+model Product {
+  id             String        @id @default(cuid())
+  // INFO
+  name           String        @db.VarChar(100)
+  quantity       Decimal
+  purchasePrice  Decimal       @db.Money
+  salePrice      Decimal       @db.Money
+  discount       Decimal
+  dimensions     Json
+  colors         Json
+  description    String        @db.VarChar
+  // CATEGORY
+  category       Category      @relation(fields: [categoryId], references: [id])
+  categoryId     String
+  // UNIT
+  unit           Unit          @relation(fields: [unitId], references: [id])
+  unitId         String
+  // BUSINESS UNIT
+  businessUnit   BusinessUnit  @relation(fields: [businessUnitId], references: [id])
+  businessUnitId String
+  // PRODUCT ITEM
+  productItems   ProductItem[]
+}
+
+model ProductItem {
+  id        String  @id @default(cuid())
+  quantity  Decimal
+  total     Decimal @db.Money
+  // PRODUCT
+  product   Product @relation(fields: [productId], references: [id])
+  productId String
+  // CART
+  cart      Cart?   @relation(fields: [cartId], references: [id])
+  cartId    String?
+}
+
+enum CartStatus {
+  PREPARING
+  SENT
+  ROUTE
+  DELIVERED
+}
+
+enum MOVEMENT {
+  INPUT
+  OUTPUT
+}
+
+model Cart {
+  id             String        @id @default(cuid())
+  // INFO
+  annotation     String
+  movement       MOVEMENT
+  deliveryDate   DateTime?     @db.Date
+  status         CartStatus    @default(PREPARING)
+  // MONEY
+  subtotal       Decimal       @db.Money
+  discount       Decimal
+  netAmount      Decimal       @db.Money
+  taxes          Decimal       @db.Money
+  total          Decimal       @db.Money
+  // BUSINESS UNIT
+  businessUnit   BusinessUnit  @relation(fields: [businessUnitId], references: [id])
+  businessUnitId String
+  // SELLER
+  seller         User          @relation(fields: [sellerId], references: [id])
+  sellerId       String
+  // PRODUCT ITEMS
+  productItems   ProductItem[]
+  // TIME
+  createdAt      DateTime      @default(now())
+  updateAt       DateTime      @updatedAt
+}

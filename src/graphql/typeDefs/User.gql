@@ -1,0 +1,60 @@
+enum Gender {
+  MALE
+  FEMALE
+  UNDEFINED
+}
+
+enum Privilege {
+  SUPER_USER
+  SUPER_STAFF
+  CUSTOMER
+}
+
+enum NormalPrivilege {
+  CUSTOMER
+}
+
+type User {
+  id: ID!
+  active: Boolean!
+  avatar: String
+  birthDate: Date
+  dateJoined: Date!
+  email: String!
+  firstName: String
+  gender: Gender!
+  isVerified: Boolean!
+  lastLogin: DateTime
+  lastName: String
+  password: String!
+  phone: String
+  privilege: Privilege
+  username: String!
+}
+
+type Query {
+  users: [User!]
+  me: User!
+}
+
+input SignUpInput {
+  email: String!
+  password: String!
+  username: String!
+  firstName: String!
+  lastName: String!
+  privilege: NormalPrivilege!
+  terms: Boolean!
+  sendInfo: Boolean!
+}
+
+input LogInInput {
+  password: String!
+  username: String!
+}
+
+type Mutation {
+  signUp(input: SignUpInput!): User!
+  deleteUser(id: ID!): Boolean!
+  logIn(input: LogInInput!): Boolean!
+}
